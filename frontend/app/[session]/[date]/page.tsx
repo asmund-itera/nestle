@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
@@ -20,8 +21,21 @@ type GameRunResponse = {
     guesses: GameRunGuess[];
 };
 
+function shiftIsoDate(dateValue: string, days: number): string | null {
+    const parsedDate = new Date(`${dateValue}T00:00:00Z`);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+        return null;
+    }
+
+    parsedDate.setUTCDate(parsedDate.getUTCDate() + days);
+    return parsedDate.toISOString().slice(0, 10);
+}
+
 export default function SessionDatePage() {
     const { session, date } = useParams<{ session: string; date: string }>();
+    const previousDate = shiftIsoDate(date, -1);
+    const nextDate = shiftIsoDate(date, 1);
 
     const [gameRun, setGameRun] = useState<GameRunResponse | null>(null);
     const [currentGuess, setCurrentGuess] = useState("");
@@ -157,6 +171,35 @@ export default function SessionDatePage() {
     return (
         <main className={`min-h-screen px-6 py-10 ${isSolved ? "bg-green-100" : "bg-zinc-50"}`}>
             <div className="mx-auto flex w-full max-w-md flex-col items-center gap-8">
+                <nav
+                    aria-label="Date navigation"
+                    className="flex w-full items-center justify-between rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700"
+                >
+                    {previousDate ? (
+                        <Link
+                            href={`/${encodeURIComponent(session)}/${encodeURIComponent(previousDate)}`}
+                            className="transition-colors hover:text-zinc-900"
+                        >
+                            Previous
+                        </Link>
+                    ) : (
+                        <span className="text-zinc-400">Previous</span>
+                    )}
+
+                    <span className="text-zinc-900">{date}</span>
+
+                    {nextDate ? (
+                        <Link
+                            href={`/${encodeURIComponent(session)}/${encodeURIComponent(nextDate)}`}
+                            className="transition-colors hover:text-zinc-900"
+                        >
+                            Next
+                        </Link>
+                    ) : (
+                        <span className="text-zinc-400">Next</span>
+                    )}
+                </nav>
+
                 <h1 className="text-4xl font-bold tracking-wide text-zinc-900">Nestle</h1>
 
                 <section
