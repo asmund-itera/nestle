@@ -47,8 +47,10 @@ export default function SessionDatePage() {
     const committedLetters = guesses.flatMap((guess) =>
         guess.letters.map((letter) => letter.value),
     );
+    const maxGuesses = 7;
     const letters = [...committedLetters, ...currentGuess.split("")];
     const committedLettersCount = committedLetters.length;
+    const isOutOfGuesses = guesses.length >= maxGuesses;
     const latestGuess = guesses.at(-1);
     const isSolved =
         !!latestGuess &&
@@ -141,7 +143,7 @@ export default function SessionDatePage() {
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (isSolved) {
+            if (isSolved || isOutOfGuesses) {
                 return;
             }
 
@@ -166,7 +168,7 @@ export default function SessionDatePage() {
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, [isSolved]);
+    }, [isOutOfGuesses, isSolved]);
 
     return (
         <main className={`min-h-screen px-6 py-10 ${isSolved ? "bg-green-100" : "bg-zinc-50"}`}>
