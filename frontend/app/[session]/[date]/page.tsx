@@ -1,14 +1,62 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+
+type GameRunLetter = {
+    value: string;
+    isCorrect: boolean;
+    isPresent: boolean;
+};
+
+type GameRunGuess = {
+    letters: GameRunLetter[];
+};
+
+type GameRunResponse = {
+    id: number;
+    date: string;
+    session: string;
+    guesses: GameRunGuess[];
+};
 
 export default function SessionDatePage() {
+    const { session, date } = useParams<{ session: string; date: string }>();
+
+    const [guesses, setGuesses] = useState<GameRunGuess[]>([]);
     const [currentGuess, setCurrentGuess] = useState("");
     const [isCurrentGuessIllegal, setIsCurrentGuessIllegal] = useState<boolean>(false);
     const cells = Array.from({ length: 5 * 7 });
-    const guesses = ["horse", "paper"];
-    const letters = [...guesses.join("").split(""), ...currentGuess.split("")];
-    const committedLettersCount = guesses.join("").length;
+    const committedLetters = guesses.flatMap((guess) =>
+        guess.letters.map((letter) => letter.value),
+    );
+    const letters = [...committedLetters, ...currentGuess.split("")];
+    const committedLettersCount = committedLetters.length;
+
+    useEffect(() => {
+        if (!session || !date) {
+            return;
+        }
+
+        let isCancelled = false;
+
+        const loadGameRun = async () => {
+            const response = await fetch(`/api/game/${encodeURIComponent(session)}/${encodeURIComponent(date)}`);
+
+            if (!response.ok || isCancelled) {
+                return;
+            }
+
+            const gameRun = (await response.json()) as GameRunResponse;
+            setGuesses(gameRun.guesses ?? []);
+        };
+
+        void loadGameRun();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [session, date]);
 
     useEffect(() => {
         if (currentGuess.length !== 5) {
