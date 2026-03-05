@@ -29,6 +29,7 @@ export default function SessionDatePage() {
     const [isSubmittingGuess, setIsSubmittingGuess] = useState(false);
     const cells = Array.from({ length: 5 * 7 });
     const guesses = gameRun?.guesses ?? [];
+    const committedLetterStates = guesses.flatMap((guess) => guess.letters);
     const committedLetters = guesses.flatMap((guess) =>
         guess.letters.map((letter) => letter.value),
     );
@@ -156,13 +157,22 @@ export default function SessionDatePage() {
                             index < committedLettersCount + 5;
                         const isIllegalCurrentGuessCell =
                             isCurrentGuessCell && isCurrentGuessIllegal;
+                        const committedLetter = committedLetterStates[index];
+
+                        let committedCellColorClass = "border-zinc-300 bg-white";
+
+                        if (committedLetter?.isCorrect) {
+                            committedCellColorClass = "border-green-700 bg-green-500 text-white";
+                        } else if (committedLetter?.isPresent) {
+                            committedCellColorClass = "border-yellow-700 bg-yellow-400";
+                        }
 
                         return (
                             <div
                                 key={index}
                                 className={`flex h-12 w-12 items-center justify-center rounded-sm border-2 text-xl font-semibold text-zinc-900 ${isIllegalCurrentGuessCell
                                     ? "border-red-500 bg-red-200"
-                                    : "border-zinc-300 bg-white"
+                                    : committedCellColorClass
                                     }`}
                             >
                                 {letters[index]?.toUpperCase() ?? ""}
