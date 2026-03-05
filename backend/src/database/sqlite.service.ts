@@ -85,7 +85,7 @@ export class SqliteService implements OnModuleInit, OnModuleDestroy {
         );
     }
 
-    getGameRun(id: number): GameRun | null {
+    getGameRunById(id: number): GameRun | null {
         const db = this.getDb();
 
         return (
@@ -150,6 +150,32 @@ export class SqliteService implements OnModuleInit, OnModuleDestroy {
             gameRunId,
             word,
         };
+    }
+
+    getWordOfTheDay(date: string): DictionaryEntry | null {
+        const db = this.getDb();
+
+        return (
+            (db
+                .prepare('SELECT * FROM games WHERE date = ?')
+                .get(date) as DictionaryEntry) || null
+        );
+    }
+
+    createWordOfTheDay(date: string): DictionaryEntry {
+        const db = this.getDb();
+        const randomWord = this.getRandomWord();
+
+        if (!randomWord) {
+            throw new Error('No words available in the dictionary');
+        }
+
+        db.prepare('INSERT INTO games (date, word) VALUES (?, ?)').run(
+            date,
+            randomWord.word,
+        );
+
+        return randomWord;
     }
 
     private getDb(): DatabaseSync {
