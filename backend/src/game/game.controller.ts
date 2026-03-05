@@ -1,6 +1,18 @@
-import { Controller, Get, Param, Post } from '@nestjs/common';
+import {
+    BadRequestException,
+    Body,
+    Controller,
+    Get,
+    Param,
+    ParseIntPipe,
+    Post,
+} from '@nestjs/common';
 import { GameRunService } from './game-run.service';
 import type { GameRun } from './game-run.service';
+
+type CreateGameRunGuessBody = {
+    word?: string;
+};
 
 @Controller('game')
 export class GameController {
@@ -13,10 +25,18 @@ export class GameController {
 
     @Post('/:gameRunId/guess')
     createGameRunGuess(
-        @Param('gameRunId') gameRunId: number,
-        @Param('word') word: string,
+        @Param('gameRunId', ParseIntPipe) gameRunId: number,
+        @Body() body: CreateGameRunGuessBody,
     ): GameRun {
+        if (!body.word || !/^[a-z]{5}$/i.test(body.word)) {
+            throw new BadRequestException('word must be a 5-letter string');
+        }
+
         const gameRun = this.gameRunService.getGameRun(gameRunId);
-        return this.gameRunService.createGameRunGuess(gameRunId, word, gameRun.date);
+        return this.gameRunService.createGameRunGuess(
+            gameRunId,
+            body.word.toLowerCase(),
+            gameRun.date,
+        );
     }
 }

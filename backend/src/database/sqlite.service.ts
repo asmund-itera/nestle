@@ -1,7 +1,6 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
 import { join } from 'node:path';
-import { get } from 'node:http';
 
 export type DictionaryEntry = {
     word: string;

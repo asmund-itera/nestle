@@ -23,10 +23,12 @@ type GameRunResponse = {
 export default function SessionDatePage() {
     const { session, date } = useParams<{ session: string; date: string }>();
 
-    const [guesses, setGuesses] = useState<GameRunGuess[]>([]);
+    const [gameRun, setGameRun] = useState<GameRunResponse | null>(null);
     const [currentGuess, setCurrentGuess] = useState("");
     const [isCurrentGuessIllegal, setIsCurrentGuessIllegal] = useState<boolean>(false);
+    const [isSubmittingGuess, setIsSubmittingGuess] = useState(false);
     const cells = Array.from({ length: 5 * 7 });
+    const guesses = gameRun?.guesses ?? [];
     const committedLetters = guesses.flatMap((guess) =>
         guess.letters.map((letter) => letter.value),
     );
@@ -48,7 +50,7 @@ export default function SessionDatePage() {
             }
 
             const gameRun = (await response.json()) as GameRunResponse;
-            setGuesses(gameRun.guesses ?? []);
+            setGameRun(gameRun);
         };
 
         void loadGameRun();
@@ -64,6 +66,10 @@ export default function SessionDatePage() {
             return;
         }
 
+        if (!gameRun || isSubmittingGuess) {
+            return;
+        }
+
         let isCancelled = false;
 
         const checkWord = async () => {
@@ -75,6 +81,27 @@ export default function SessionDatePage() {
 
             if (response.status === 200) {
                 setIsCurrentGuessIllegal(false);
+                setIsSubmittingGuess(true);
+
+                const submitResponse = await fetch(`/api/game/${gameRun.id}/guess`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ word: currentGuess }),
+                });
+
+                if (isCancelled) {
+                    return;
+                }
+
+                if (submitResponse.ok) {
+                    const updatedGameRun = (await submitResponse.json()) as GameRunResponse;
+                    setGameRun(updatedGameRun);
+                    setCurrentGuess("");
+                }
+
+                setIsSubmittingGuess(false);
                 return;
             }
 
@@ -86,7 +113,7 @@ export default function SessionDatePage() {
         return () => {
             isCancelled = true;
         };
-    }, [currentGuess]);
+    }, [currentGuess, gameRun]);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
