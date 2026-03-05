@@ -112,10 +112,6 @@ export class SqliteService implements OnModuleInit, OnModuleDestroy {
     createGameRun(date: string, sessionId: string): GameRun {
         const db = this.getDb();
 
-        const existingRun = this.getGameRunByDate(date, sessionId);
-        if (existingRun) {
-            return existingRun;
-        }
         const gameRunResult = db
             .prepare(
                 'INSERT INTO "game-runs" (date, session) VALUES (?, ?)',
