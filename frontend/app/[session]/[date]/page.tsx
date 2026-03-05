@@ -35,6 +35,11 @@ export default function SessionDatePage() {
     );
     const letters = [...committedLetters, ...currentGuess.split("")];
     const committedLettersCount = committedLetters.length;
+    const latestGuess = guesses.at(-1);
+    const isSolved =
+        !!latestGuess &&
+        latestGuess.letters.length === 5 &&
+        latestGuess.letters.every((letter) => letter.isCorrect);
 
     useEffect(() => {
         if (!session || !date) {
@@ -62,6 +67,10 @@ export default function SessionDatePage() {
     }, [session, date]);
 
     useEffect(() => {
+        if (isSolved) {
+            return;
+        }
+
         if (currentGuess.length !== 5) {
             setIsCurrentGuessIllegal(false);
             return;
@@ -114,10 +123,14 @@ export default function SessionDatePage() {
         return () => {
             isCancelled = true;
         };
-    }, [currentGuess, gameRun]);
+    }, [currentGuess, gameRun, isSolved]);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
+            if (isSolved) {
+                return;
+            }
+
             if (event.key === "Backspace") {
                 setCurrentGuess((prev) => prev.slice(0, -1));
                 return;
@@ -139,10 +152,10 @@ export default function SessionDatePage() {
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, []);
+    }, [isSolved]);
 
     return (
-        <main className="min-h-screen bg-zinc-50 px-6 py-10">
+        <main className={`min-h-screen px-6 py-10 ${isSolved ? "bg-green-100" : "bg-zinc-50"}`}>
             <div className="mx-auto flex w-full max-w-md flex-col items-center gap-8">
                 <h1 className="text-4xl font-bold tracking-wide text-zinc-900">Nestle</h1>
 
@@ -180,6 +193,12 @@ export default function SessionDatePage() {
                         );
                     })}
                 </section>
+
+                {isSolved && (
+                    <p className="text-center text-lg font-semibold text-green-900">
+                        Success! You solved it in {guesses.length} {guesses.length === 1 ? "guess" : "guesses"}.
+                    </p>
+                )}
             </div>
         </main>
     );
