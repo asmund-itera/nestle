@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { DictionaryController } from './dictionary.controller';
-import { SqliteService } from './sqlite.service';
+import { AppController } from './app/app.controller';
+import { AppService } from './app/app.service';
+import { DictionaryController } from './dictionary/dictionary.controller';
+import { SqliteService } from './database/sqlite.service';
 
 @Module({
   imports: [],
