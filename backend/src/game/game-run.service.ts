@@ -51,13 +51,30 @@ export class GameRunService {
         const solution = (this.sqliteService.getWordOfTheDay(date)
             || this.sqliteService.createWordOfTheDay(date)).word;
 
-        return dbGuesses.map((guess) => ({
-            letters: guess.word.split("").map((letter, index) => ({
+        return dbGuesses.map((guess) => {
+            let letters = guess.word.split("").map((letter, index) => ({
                 value: letter,
-                isCorrect: solution[index] === letter,
-                isPresent: solution.includes(letter) && solution[index] !== letter,
-            })),
-        }));
+                isCorrect: false,
+                isPresent: false,
+            }));
+            let solutionLetters = solution.split("");
+
+            for (let i = 0; i < letters.length; i++) {
+                if (letters[i].value === solutionLetters[i]) {
+                    letters[i].isCorrect = true;
+                    solutionLetters[i] = "";
+                }
+            }
+            for (let i = 0; i < letters.length; i++) {
+                if (!letters[i].isCorrect && solutionLetters.includes(letters[i].value)) {
+                    letters[i].isPresent = true;
+                    solutionLetters[solutionLetters.indexOf(letters[i].value)] = "";
+                }
+            }
+            return {
+                letters: letters,
+            };
+        });
     }
 
     createGameRunGuess(gameRunId: number, word: string, date: string): GameRun {
