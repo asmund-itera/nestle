@@ -1,21 +1,5 @@
 import { useEffect, useState } from "react";
-
-export type GameRunLetter = {
-  value: string;
-  isCorrect: boolean;
-  isPresent: boolean;
-};
-
-export type GameRunGuess = {
-  letters: GameRunLetter[];
-};
-
-export type GameRunResponse = {
-  id: number;
-  date: string;
-  session: string;
-  guesses: GameRunGuess[];
-};
+import type { GameRunGuess, GameRunLetter, GameRunResponse } from "../_types/game";
 
 type UseGameRunResult = {
   gameRun: GameRunResponse | null;

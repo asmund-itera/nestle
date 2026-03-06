@@ -1,6 +1,6 @@
 import type { CommittedGridCell } from "../_components/puzzle-grid";
 import type { CellStatus } from "../_components/puzzle-cell";
-import type { GameRunGuess, GameRunLetter } from "../_hooks/use-game-run";
+import type { GameRunGuess, GameRunLetter } from "../_types/game";
 
 export type KeyboardKeyState = "unused" | "correct" | "present" | "absent";
 

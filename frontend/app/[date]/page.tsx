@@ -4,17 +4,12 @@ import { useParams } from "next/navigation";
 import { DateNav } from "./_components/date-nav";
 import { PuzzleGrid } from "./_components/puzzle-grid";
 import { Keyboard } from "./_components/keyboard";
+import { KEYBOARD_KEYS, MAX_GUESSES, WORD_LENGTH } from "./_config/game-config";
 import { useGameRun } from "./_hooks/use-game-run";
 import { buildCommittedGrid, buildKeyboardKeyStates } from "./_lib/game-view-model";
 
-const keyboardRows = [[..."qwertyuiop"], [..."asdfghjkl"], [..."zxcvbnm"]];
-const keyboardKeys = keyboardRows.flat();
-
 export default function SessionDatePage() {
     const { date } = useParams<{ date: string }>();
-
-    const wordLength = 5;
-    const maxGuesses = 7;
 
     const {
         guesses,
@@ -23,9 +18,9 @@ export default function SessionDatePage() {
         isCurrentGuessIllegal,
         isOutOfGuesses,
         isSolved,
-    } = useGameRun(date, wordLength, maxGuesses);
-    const committedGrid = buildCommittedGrid(guesses, wordLength, maxGuesses);
-    const keyboardKeyStates = buildKeyboardKeyStates(gameRunLetters, keyboardKeys);
+    } = useGameRun(date, WORD_LENGTH, MAX_GUESSES);
+    const committedGrid = buildCommittedGrid(guesses, WORD_LENGTH, MAX_GUESSES);
+    const keyboardKeyStates = buildKeyboardKeyStates(gameRunLetters, KEYBOARD_KEYS);
     return (
         <main className={`min-h-screen px-6 py-10 ${isSolved ? "bg-green-100" : "bg-zinc-50"}`}>
             <div className="mx-auto flex w-full max-w-md flex-col items-center gap-8">

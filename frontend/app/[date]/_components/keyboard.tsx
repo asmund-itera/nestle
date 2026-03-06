@@ -1,10 +1,9 @@
+import { KEYBOARD_ROWS } from "../_config/game-config";
 import type { KeyboardKeyState } from "../_lib/game-view-model";
 
 type KeyboardProps = {
   keyStates: Record<string, KeyboardKeyState>;
 };
-
-const keyboardRows = [[..."qwertyuiop"], [..."asdfghjkl"], [..."zxcvbnm"]];
 
 const keyStateClassMap: Record<KeyboardKeyState, string> = {
   unused: "border-zinc-300 bg-white text-zinc-700",
@@ -16,7 +15,7 @@ const keyStateClassMap: Record<KeyboardKeyState, string> = {
 export function Keyboard({ keyStates }: KeyboardProps) {
   return (
     <div className="flex max-w-md flex-col gap-2">
-      {keyboardRows.map((row, rowIndex) => (
+      {KEYBOARD_ROWS.map((row, rowIndex) => (
         <div key={rowIndex} className="flex flex-row justify-center gap-2">
           {row.map((letter) => {
             const cellColorClass = keyStateClassMap[keyStates[letter] ?? "unused"];
