@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PuzzleGrid } from "./_components/puzzle-grid";
 import { Keyboard } from "./_components/keyboard";
-import type { CellStatus } from "./_components/puzzle-cell";
-import type { CommittedGridCell } from "./_components/puzzle-grid";
 import { useGameRun } from "./_hooks/use-game-run";
+import { buildCommittedGrid, buildKeyboardKeyStates } from "./_lib/game-view-model";
+
+const keyboardRows = [[..."qwertyuiop"], [..."asdfghjkl"], [..."zxcvbnm"]];
+const keyboardKeys = keyboardRows.flat();
 
 function shiftIsoDate(dateValue: string, days: number): string | null {
     const parsedDate = new Date(`${dateValue}T00:00:00Z`);
@@ -35,30 +37,8 @@ export default function SessionDatePage() {
         isOutOfGuesses,
         isSolved,
     } = useGameRun(date, wordLength, maxGuesses);
-    const committedGrid: CommittedGridCell[][] = [
-        ...guesses.map((guess) =>
-            guess.letters.map(({ value, isCorrect, isPresent }) => {
-                let status: CellStatus = "absent";
-
-                if (isCorrect) {
-                    status = "correct";
-                } else if (isPresent) {
-                    status = "present";
-                }
-
-                return {
-                    letter: value,
-                    status,
-                };
-            }),
-        ),
-        ...Array.from({ length: Math.max(0, maxGuesses - guesses.length) }, () =>
-            Array.from({ length: wordLength }, () => ({
-                letter: "",
-                status: "empty" as const,
-            })),
-        ),
-    ];
+    const committedGrid = buildCommittedGrid(guesses, wordLength, maxGuesses);
+    const keyboardKeyStates = buildKeyboardKeyStates(gameRunLetters, keyboardKeys);
     return (
         <main className={`min-h-screen px-6 py-10 ${isSolved ? "bg-green-100" : "bg-zinc-50"}`}>
             <div className="mx-auto flex w-full max-w-md flex-col items-center gap-8">
@@ -106,7 +86,7 @@ export default function SessionDatePage() {
                 )}
             
                 {!isOutOfGuesses && !isSolved && (
-                    <Keyboard gameRunLetters={gameRunLetters} />
+                    <Keyboard keyStates={keyboardKeyStates} />
                 )}
 
             </div>
