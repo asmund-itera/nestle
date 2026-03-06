@@ -33,7 +33,7 @@ function shiftIsoDate(dateValue: string, days: number): string | null {
 }
 
 export default function SessionDatePage() {
-    const { session, date } = useParams<{ session: string; date: string }>();
+    const { date } = useParams<{ date: string }>();
     const previousDate = shiftIsoDate(date, -1);
     const nextDate = shiftIsoDate(date, 1);
 
@@ -58,21 +58,21 @@ export default function SessionDatePage() {
         latestGuess.letters.every((letter) => letter.isCorrect);
 
     useEffect(() => {
-        if (!session || !date) {
+        if (!date) {
             return;
         }
 
         let isCancelled = false;
 
         const loadGameRun = async () => {
-            const response = await fetch(`/api/game/${encodeURIComponent(session)}/${encodeURIComponent(date)}`);
+            const response = await fetch(`/api/game/${encodeURIComponent(date)}`);
 
             if (!response.ok || isCancelled) {
                 return;
             }
 
-            const gameRun = (await response.json()) as GameRunResponse;
-            setGameRun(gameRun);
+            const loadedGameRun = (await response.json()) as GameRunResponse;
+            setGameRun(loadedGameRun);
         };
 
         void loadGameRun();
@@ -80,7 +80,7 @@ export default function SessionDatePage() {
         return () => {
             isCancelled = true;
         };
-    }, [session, date]);
+    }, [date]);
 
     useEffect(() => {
         if (isSolved) {
@@ -179,7 +179,7 @@ export default function SessionDatePage() {
                 >
                     {previousDate ? (
                         <Link
-                            href={`/${encodeURIComponent(session)}/${encodeURIComponent(previousDate)}`}
+                            href={`/${encodeURIComponent(previousDate)}`}
                             className="transition-colors hover:text-zinc-900"
                         >
                             Previous
@@ -192,7 +192,7 @@ export default function SessionDatePage() {
 
                     {nextDate ? (
                         <Link
-                            href={`/${encodeURIComponent(session)}/${encodeURIComponent(nextDate)}`}
+                            href={`/${encodeURIComponent(nextDate)}`}
                             className="transition-colors hover:text-zinc-900"
                         >
                             Next

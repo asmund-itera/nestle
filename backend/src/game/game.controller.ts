@@ -6,9 +6,11 @@ import {
     Param,
     ParseIntPipe,
     Post,
+    Req,
 } from '@nestjs/common';
 import { GameRunService } from './game-run.service';
 import type { GameRun } from './game-run.service';
+import type { SessionRequest } from '../session/session-cookie.middleware';
 
 type CreateGameRunGuessBody = {
     word?: string;
@@ -18,9 +20,9 @@ type CreateGameRunGuessBody = {
 export class GameController {
     constructor(private readonly gameRunService: GameRunService) { }
 
-    @Get('/:session/:date')
-    getGameRun(@Param('session') session: string, @Param('date') date: string): GameRun {
-        return this.gameRunService.getOrCreateGameRun(session, date);
+    @Get('/:date')
+    getGameRun(@Req() req: SessionRequest, @Param('date') date: string): GameRun {
+        return this.gameRunService.getOrCreateGameRun(req.sessionId, date);
     }
 
     @Post('/:gameRunId/guess')
