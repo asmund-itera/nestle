@@ -112,7 +112,7 @@ export function useGameRun(
     return () => {
       isCancelled = true;
     };
-  }, [currentGuess, gameRun, isSolved, isSubmittingGuess, wordLength]);
+  }, [currentGuess, gameRun, isSolved, wordLength]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
