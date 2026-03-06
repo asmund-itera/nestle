@@ -39,27 +39,33 @@ export function buildKeyboardKeyStates(
   gameRunLetters: GameRunLetter[],
   keys: string[],
 ): Record<string, KeyboardKeyState> {
-  const keyStates: Record<string, KeyboardKeyState> = {};
+  const keyStates = Object.fromEntries(
+    keys.map((key) => [key, "unused" as KeyboardKeyState]),
+  );
 
-  for (const key of keys) {
-    const letterState = gameRunLetters.find((entry) => entry.value === key);
+  const statePriority: Record<KeyboardKeyState, number> = {
+    unused: 0,
+    absent: 1,
+    present: 2,
+    correct: 3,
+  };
 
-    if (!letterState) {
-      keyStates[key] = "unused";
+  for (const letterState of gameRunLetters) {
+    if (!(letterState.value in keyStates)) {
       continue;
     }
 
-    if (letterState.isCorrect) {
-      keyStates[key] = "correct";
-      continue;
-    }
+    const nextState: KeyboardKeyState = letterState.isCorrect
+      ? "correct"
+      : letterState.isPresent
+        ? "present"
+        : "absent";
 
-    if (letterState.isPresent) {
-      keyStates[key] = "present";
-      continue;
-    }
+    const currentState = keyStates[letterState.value];
 
-    keyStates[key] = "absent";
+    if (statePriority[nextState] > statePriority[currentState]) {
+      keyStates[letterState.value] = nextState;
+    }
   }
 
   return keyStates;
