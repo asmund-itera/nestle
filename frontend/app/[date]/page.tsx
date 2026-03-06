@@ -37,31 +37,28 @@ export default function SessionDatePage() {
     const previousDate = shiftIsoDate(date, -1);
     const nextDate = shiftIsoDate(date, 1);
 
+    const wordLength = 5;
+    const maxGuesses = 7;
+
     const [gameRun, setGameRun] = useState<GameRunResponse | null>(null);
     const [currentGuess, setCurrentGuess] = useState("");
     const [isCurrentGuessIllegal, setIsCurrentGuessIllegal] = useState<boolean>(false);
     const [isSubmittingGuess, setIsSubmittingGuess] = useState(false);
-    const cells = Array.from({ length: 5 * 7 });
+    const cells = Array.from({ length: wordLength * maxGuesses });
     const guesses = gameRun?.guesses ?? [];
     const committedLetterStates = guesses.flatMap((guess) => guess.letters);
     const committedLetters = guesses.flatMap((guess) =>
         guess.letters.map((letter) => letter.value),
     );
-    const maxGuesses = 7;
     const letters = [...committedLetters, ...currentGuess.split("")];
-    const committedLettersCount = committedLetters.length;
     const isOutOfGuesses = guesses.length >= maxGuesses;
     const latestGuess = guesses.at(-1);
     const isSolved =
         !!latestGuess &&
-        latestGuess.letters.length === 5 &&
+        latestGuess.letters.length === wordLength &&
         latestGuess.letters.every((letter) => letter.isCorrect);
 
     useEffect(() => {
-        if (!date) {
-            return;
-        }
-
         let isCancelled = false;
 
         const loadGameRun = async () => {
@@ -87,7 +84,7 @@ export default function SessionDatePage() {
             return;
         }
 
-        if (currentGuess.length !== 5) {
+        if (currentGuess.length !== wordLength) {
             setIsCurrentGuessIllegal(false);
             return;
         }
@@ -154,7 +151,7 @@ export default function SessionDatePage() {
 
             if (/^[a-z]$/i.test(event.key)) {
                 setCurrentGuess((prev) => {
-                    if (prev.length >= 5) {
+                    if (prev.length >= wordLength) {
                         return prev;
                     }
 
@@ -209,10 +206,9 @@ export default function SessionDatePage() {
                     className="grid grid-cols-5 gap-2"
                 >
                     {cells.map((_, index) => {
-                        // Highlight the active 5-letter guess row if the word is illegal.
                         const isCurrentGuessCell =
-                            index >= committedLettersCount &&
-                            index < committedLettersCount + 5;
+                            index >= committedLetters.length &&
+                            index < committedLetters.length + wordLength;
                         const isIllegalCurrentGuessCell =
                             isCurrentGuessCell && isCurrentGuessIllegal;
                         const committedLetter = committedLetterStates[index];
