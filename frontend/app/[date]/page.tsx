@@ -1,28 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { PuzzleGrid } from "./_components/puzzle-grid";
 import type { CellStatus } from "./_components/puzzle-cell";
 import type { CommittedGridCell } from "./_components/puzzle-grid";
-
-type GameRunLetter = {
-    value: string;
-    isCorrect: boolean;
-    isPresent: boolean;
-};
-
-type GameRunGuess = {
-    letters: GameRunLetter[];
-};
-
-type GameRunResponse = {
-    id: number;
-    date: string;
-    session: string;
-    guesses: GameRunGuess[];
-};
+import { useGameRun } from "./_hooks/use-game-run";
 
 function shiftIsoDate(dateValue: string, days: number): string | null {
     const parsedDate = new Date(`${dateValue}T00:00:00Z`);
@@ -43,21 +26,31 @@ export default function SessionDatePage() {
     const wordLength = 5;
     const maxGuesses = 7;
 
-    const [gameRun, setGameRun] = useState<GameRunResponse | null>(null);
-    const [currentGuess, setCurrentGuess] = useState("");
-    const [isCurrentGuessIllegal, setIsCurrentGuessIllegal] = useState<boolean>(false);
-    const [isSubmittingGuess, setIsSubmittingGuess] = useState(false);
-    const guesses = gameRun?.guesses ?? [];
-    const committedLetterStates = guesses.flatMap((guess) => guess.letters);
-    const committedLetters = guesses.flatMap((guess) =>
-        guess.letters.map((letter) => letter.value),
-    );
+    const {
+        guesses,
+        gameRunLetters,
+        currentGuess,
+        isCurrentGuessIllegal,
+        isOutOfGuesses,
+        isSolved,
+    } = useGameRun(date, wordLength, maxGuesses);
+    const committedLetters = gameRunLetters.map((letter) => letter.value);
     const committedGrid: CommittedGridCell[][] = [
         ...guesses.map((guess) =>
-            guess.letters.map(({value, isCorrect, isPresent}) => ({
+            guess.letters.map(({ value, isCorrect, isPresent }) => {
+                let status: CellStatus = "absent";
+
+                if (isCorrect) {
+                    status = "correct";
+                } else if (isPresent) {
+                    status = "present";
+                }
+
+                return {
                     letter: value,
-                    status: (isCorrect) ? "correct" : (isPresent) ? "present" : "absent",
-            })),
+                    status,
+                };
+            }),
         ),
         ...Array.from({ length: Math.max(0, maxGuesses - guesses.length) }, () =>
             Array.from({ length: wordLength }, () => ({
@@ -66,122 +59,6 @@ export default function SessionDatePage() {
             })),
         ),
     ];
-    const isOutOfGuesses = guesses.length >= maxGuesses;
-    const latestGuess = guesses.at(-1);
-    const isSolved =
-        !!latestGuess &&
-        latestGuess.letters.length === wordLength &&
-        latestGuess.letters.every((letter) => letter.isCorrect);
-
-    useEffect(() => {
-        let isCancelled = false;
-
-        const loadGameRun = async () => {
-            const response = await fetch(`/api/game/${encodeURIComponent(date)}`);
-
-            if (!response.ok || isCancelled) {
-                return;
-            }
-
-            const loadedGameRun = (await response.json()) as GameRunResponse;
-            setGameRun(loadedGameRun);
-        };
-
-        void loadGameRun();
-
-        return () => {
-            isCancelled = true;
-        };
-    }, [date]);
-
-    useEffect(() => {
-        if (isSolved) {
-            return;
-        }
-
-        if (currentGuess.length !== wordLength) {
-            setIsCurrentGuessIllegal(false);
-            return;
-        }
-
-        if (!gameRun || isSubmittingGuess) {
-            return;
-        }
-
-        let isCancelled = false;
-
-        const checkWord = async () => {
-            const response = await fetch(`/api/dictionary/check/${encodeURIComponent(currentGuess)}`);
-
-            if (isCancelled) {
-                return;
-            }
-
-            if (response.status === 200) {
-                setIsCurrentGuessIllegal(false);
-                setIsSubmittingGuess(true);
-
-                const submitResponse = await fetch(`/api/game/${gameRun.id}/guess`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ word: currentGuess }),
-                });
-
-                if (isCancelled) {
-                    return;
-                }
-
-                if (submitResponse.ok) {
-                    const updatedGameRun = (await submitResponse.json()) as GameRunResponse;
-                    setGameRun(updatedGameRun);
-                    setCurrentGuess("");
-                }
-
-                setIsSubmittingGuess(false);
-                return;
-            }
-
-            setIsCurrentGuessIllegal(true);
-        };
-
-        void checkWord();
-
-        return () => {
-            isCancelled = true;
-        };
-    }, [currentGuess, gameRun, isSolved]);
-
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (isSolved || isOutOfGuesses) {
-                return;
-            }
-
-            if (event.key === "Backspace") {
-                setCurrentGuess((prev) => prev.slice(0, -1));
-                return;
-            }
-
-            if (/^[a-z]$/i.test(event.key)) {
-                setCurrentGuess((prev) => {
-                    if (prev.length >= wordLength) {
-                        return prev;
-                    }
-
-                    return `${prev}${event.key.toLowerCase()}`;
-                });
-            }
-        };
-
-        window.addEventListener("keydown", handleKeyDown);
-
-        return () => {
-            window.removeEventListener("keydown", handleKeyDown);
-        };
-    }, [isOutOfGuesses, isSolved]);
-
     return (
         <main className={`min-h-screen px-6 py-10 ${isSolved ? "bg-green-100" : "bg-zinc-50"}`}>
             <div className="mx-auto flex w-full max-w-md flex-col items-center gap-8">
@@ -240,7 +117,7 @@ export default function SessionDatePage() {
                                     let cellColorClass = "border-zinc-300 bg-white text-zinc-700";
 
                                     if (isCommitted) {
-                                        const letterState = committedLetterStates.find(
+                                        const letterState = gameRunLetters.find(
                                             (l) => l.value === letter,
                                         );
 
