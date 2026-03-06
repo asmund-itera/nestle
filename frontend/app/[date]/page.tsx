@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { PuzzleGrid } from "./_components/puzzle-grid";
+import type { CellStatus } from "./_components/puzzle-cell";
+import type { CommittedGridCell } from "./_components/puzzle-grid";
 
 type GameRunLetter = {
     value: string;
@@ -44,13 +47,25 @@ export default function SessionDatePage() {
     const [currentGuess, setCurrentGuess] = useState("");
     const [isCurrentGuessIllegal, setIsCurrentGuessIllegal] = useState<boolean>(false);
     const [isSubmittingGuess, setIsSubmittingGuess] = useState(false);
-    const cells = Array.from({ length: wordLength * maxGuesses });
     const guesses = gameRun?.guesses ?? [];
     const committedLetterStates = guesses.flatMap((guess) => guess.letters);
     const committedLetters = guesses.flatMap((guess) =>
         guess.letters.map((letter) => letter.value),
     );
-    const letters = [...committedLetters, ...currentGuess.split("")];
+    const committedGrid: CommittedGridCell[][] = [
+        ...guesses.map((guess) =>
+            guess.letters.map(({value, isCorrect, isPresent}) => ({
+                    letter: value,
+                    status: (isCorrect) ? "correct" : (isPresent) ? "present" : "absent",
+            })),
+        ),
+        ...Array.from({ length: Math.max(0, maxGuesses - guesses.length) }, () =>
+            Array.from({ length: wordLength }, () => ({
+                letter: "",
+                status: "empty" as const,
+            })),
+        ),
+    ];
     const isOutOfGuesses = guesses.length >= maxGuesses;
     const latestGuess = guesses.at(-1);
     const isSolved =
@@ -201,39 +216,11 @@ export default function SessionDatePage() {
 
                 <h1 className="text-4xl font-bold tracking-wide text-zinc-900">Nestle</h1>
 
-                <section
-                    aria-label="Game grid"
-                    className="grid grid-cols-5 gap-2"
-                >
-                    {cells.map((_, index) => {
-                        const isCurrentGuessCell =
-                            index >= committedLetters.length &&
-                            index < committedLetters.length + wordLength;
-                        const isIllegalCurrentGuessCell =
-                            isCurrentGuessCell && isCurrentGuessIllegal;
-                        const committedLetter = committedLetterStates[index];
-
-                        let committedCellColorClass = "border-zinc-300 bg-white";
-
-                        if (committedLetter?.isCorrect) {
-                            committedCellColorClass = "border-green-700 bg-green-500 text-white";
-                        } else if (committedLetter?.isPresent) {
-                            committedCellColorClass = "border-yellow-700 bg-yellow-400";
-                        }
-
-                        return (
-                            <div
-                                key={index}
-                                className={`flex h-12 w-12 items-center justify-center rounded-sm border-2 text-xl font-semibold text-zinc-900 ${isIllegalCurrentGuessCell
-                                    ? "border-red-500 bg-red-200"
-                                    : committedCellColorClass
-                                    }`}
-                            >
-                                {letters[index]?.toUpperCase() ?? ""}
-                            </div>
-                        );
-                    })}
-                </section>
+                <PuzzleGrid
+                    committedGrid={committedGrid}
+                    currentGuess={currentGuess}
+                    isCurrentGuessIllegal={isCurrentGuessIllegal}
+                />
 
                 {isSolved && (
                     <p className="text-center text-lg font-semibold text-green-900">
