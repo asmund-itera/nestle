@@ -244,6 +244,46 @@ export default function SessionDatePage() {
                         Success! You solved it in {guesses.length} {guesses.length === 1 ? "guess" : "guesses"}.
                     </p>
                 )}
+            
+                {!isOutOfGuesses && !isSolved && (
+                    <div className="flex max-w-md flex-col gap-2">
+                        {[[..."qwertyuiop"], [..."asdfghjkl"], [..."zxcvbnm"]].map((row, rowIndex) => (
+                            <div
+                                key={rowIndex}
+                                className="flex flex-row justify-center gap-2"
+                            >
+                                {row.map((letter) => {
+                                    const isCommitted = committedLetters.includes(letter);
+                                    let cellColorClass = "border-zinc-300 bg-white text-zinc-700";
+
+                                    if (isCommitted) {
+                                        const letterState = committedLetterStates.find(
+                                            (l) => l.value === letter,
+                                        );
+
+                                        if (letterState?.isCorrect) {
+                                            cellColorClass = "border-green-700 bg-green-500 text-white";
+                                        } else if (letterState?.isPresent) {
+                                            cellColorClass = "border-yellow-700 bg-yellow-400";
+                                        } else {
+                                            cellColorClass = "border-zinc-500 bg-zinc-400 text-white";
+                                        }
+                                    }
+
+                                    return (
+                                        <div
+                                            key={letter}
+                                            className={`rounded-sm border p-2 text-xs font-medium ${cellColorClass}`}
+                                        >
+                                            {letter.toUpperCase()}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
             </div>
         </main>
     );
