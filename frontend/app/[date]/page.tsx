@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PuzzleGrid } from "./_components/puzzle-grid";
+import { Keyboard } from "./_components/keyboard";
 import type { CellStatus } from "./_components/puzzle-cell";
 import type { CommittedGridCell } from "./_components/puzzle-grid";
 import { useGameRun } from "./_hooks/use-game-run";
@@ -34,7 +35,6 @@ export default function SessionDatePage() {
         isOutOfGuesses,
         isSolved,
     } = useGameRun(date, wordLength, maxGuesses);
-    const committedLetters = gameRunLetters.map((letter) => letter.value);
     const committedGrid: CommittedGridCell[][] = [
         ...guesses.map((guess) =>
             guess.letters.map(({ value, isCorrect, isPresent }) => {
@@ -106,42 +106,7 @@ export default function SessionDatePage() {
                 )}
             
                 {!isOutOfGuesses && !isSolved && (
-                    <div className="flex max-w-md flex-col gap-2">
-                        {[[..."qwertyuiop"], [..."asdfghjkl"], [..."zxcvbnm"]].map((row, rowIndex) => (
-                            <div
-                                key={rowIndex}
-                                className="flex flex-row justify-center gap-2"
-                            >
-                                {row.map((letter) => {
-                                    const isCommitted = committedLetters.includes(letter);
-                                    let cellColorClass = "border-zinc-300 bg-white text-zinc-700";
-
-                                    if (isCommitted) {
-                                        const letterState = gameRunLetters.find(
-                                            (l) => l.value === letter,
-                                        );
-
-                                        if (letterState?.isCorrect) {
-                                            cellColorClass = "border-green-700 bg-green-500 text-white";
-                                        } else if (letterState?.isPresent) {
-                                            cellColorClass = "border-yellow-700 bg-yellow-400";
-                                        } else {
-                                            cellColorClass = "border-zinc-500 bg-zinc-400 text-white";
-                                        }
-                                    }
-
-                                    return (
-                                        <div
-                                            key={letter}
-                                            className={`rounded-sm border p-2 text-xs font-medium ${cellColorClass}`}
-                                        >
-                                            {letter.toUpperCase()}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        ))}
-                    </div>
+                    <Keyboard gameRunLetters={gameRunLetters} />
                 )}
 
             </div>
