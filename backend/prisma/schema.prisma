@@ -1,0 +1,61 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Dictionary {
+  word           String         @id
+  gameWords      GameWord[]
+  gameRunGuesses GameRunGuess[]
+
+  @@map("dictionary")
+}
+
+model GameWord {
+  word            String     @id
+  dictionaryEntry Dictionary @relation(fields: [word], references: [word])
+  games          Game[]
+
+  @@map("game-words")
+}
+
+model Game {
+  date            DateTime    @id @db.Date
+  word            String?
+  gameWordEntry GameWord? @relation(fields: [word], references: [word])
+
+  @@map("games")
+}
+
+model GameRun {
+  id      Int            @id @default(autoincrement())
+  date    DateTime       @db.Date
+  session String
+  guesses GameRunGuess[]
+
+  @@index([date])
+  @@index([session])
+  @@map("game-runs")
+}
+
+model GameRunGuess {
+  id              Int         @id @default(autoincrement())
+  gameRunId       Int?        @map("game-run")
+  word            String?
+  gameRun         GameRun?    @relation(fields: [gameRunId], references: [id])
+  dictionaryEntry Dictionary? @relation(fields: [word], references: [word])
+
+  @@index([gameRunId])
+  @@index([word])
+  @@map("game-run-guesses")
+}
