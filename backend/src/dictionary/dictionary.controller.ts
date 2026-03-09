@@ -7,7 +7,6 @@ import {
     Param,
     Put,
 } from '@nestjs/common';
-import { SqliteService } from '../database/sqlite.service';
 import type { DictionaryEntry } from '../database/sqlite.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -18,13 +17,12 @@ type UpsertEntryBody = {
 @Controller('dictionary')
 export class DictionaryController {
     constructor(
-        private readonly sqliteService: SqliteService,
         private readonly prismaService: PrismaService
     ) { }
 
     @Get('/random')
-    getRandomWord(): DictionaryEntry {
-        const entry = this.sqliteService.getRandomWord();
+    async getRandomWord(): Promise<DictionaryEntry> {
+        const entry = await this.prismaService.getRandomWord();
 
         if (!entry) {
             throw new NotFoundException('No words found in the dictionary');

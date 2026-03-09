@@ -19,4 +19,15 @@ export class PrismaService
             where: { word },
         });
     }
+
+    async getRandomWord(): Promise<{ word: string } | null> {
+        const rows = await this.$queryRaw<Array<{ word: string }>>`
+            SELECT word
+            FROM "game-words"
+            ORDER BY RANDOM()
+            LIMIT 1
+        `;
+
+        return rows[0] ?? null;
+    }
 }
