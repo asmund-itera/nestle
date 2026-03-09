@@ -177,6 +177,20 @@ export class SqliteService implements OnModuleInit, OnModuleDestroy {
         return randomWord;
     }
 
+    getAllWinsForSession(sessionId: string): GameRun[] {
+        const db = this.getDb();
+
+        return db
+            .prepare(
+                `SELECT gr.* FROM "game-runs" gr
+                JOIN "game-run-guesses" grg ON gr.id = grg."game-run"
+                JOIN games g ON gr.date = g.date
+                WHERE gr.session = ? AND grg.word = g.word
+                ORDER BY gr.date DESC`,
+            )
+            .all(sessionId) as GameRun[];
+    }
+
     private getDb(): DatabaseSync {
         if (!this.db) {
             throw new Error('Database is not initialized');

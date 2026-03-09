@@ -26,7 +26,9 @@ export default function SessionDatePage() {
             <div className="mx-auto flex w-full max-w-md flex-col items-center gap-8">
                 <DateNav date={date} />
 
-                <h1 className="text-4xl font-bold tracking-wide text-zinc-900">Nestle</h1>
+                <a href="/">
+                    <h1 className="text-4xl font-bold tracking-wide text-zinc-900">Nestle</h1>
+                </a>
 
                 <PuzzleGrid
                     committedGrid={committedGrid}
@@ -39,7 +41,7 @@ export default function SessionDatePage() {
                         Success! You solved it in {guesses.length} {guesses.length === 1 ? "guess" : "guesses"}.
                     </p>
                 )}
-            
+
                 {!isOutOfGuesses && !isSolved && (
                     <Keyboard keyStates={keyboardKeyStates} />
                 )}

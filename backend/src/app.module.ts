@@ -6,11 +6,13 @@ import { SqliteService } from './database/sqlite.service';
 import { GameController } from './game/game.controller';
 import { GameRunService } from './game/game-run.service';
 import { SessionCookieMiddleware } from './session/session-cookie.middleware';
+import { StatsController } from './stats/stats.controller';
+import { StatsService } from './stats/stats.service';
 
 @Module({
   imports: [],
-  controllers: [AppController, DictionaryController, GameController],
-  providers: [AppService, SqliteService, GameRunService],
+  controllers: [AppController, DictionaryController, GameController, StatsController],
+  providers: [AppService, SqliteService, GameRunService, StatsService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
