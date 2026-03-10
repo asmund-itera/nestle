@@ -8,7 +8,7 @@ import { GameRunService } from './game/game-run.service';
 import { SessionCookieMiddleware } from './session/session-cookie.middleware';
 import { StatsController } from './stats/stats.controller';
 import { StatsService } from './stats/stats.service';
-import { PrismaService } from './prisma/prisma.service';
+import { PrismaService } from './database/prisma.service';
 
 @Module({
   imports: [],

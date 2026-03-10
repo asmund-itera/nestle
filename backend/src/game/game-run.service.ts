@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { SqliteService } from '../database/sqlite.service';
+import { PrismaService } from 'src/database/prisma.service';
+import type { GameRun as DbGameRun } from '../../generated/prisma/client';
 
-export type GameRun = {
-    id: number;
-    date: string;
-    session: string;
+export type GameRun = DbGameRun & {
     guesses: Guess[];
 };
 
@@ -20,10 +18,10 @@ export type Letter = {
 
 @Injectable()
 export class GameRunService {
-    constructor(private readonly sqliteService: SqliteService) { }
+    constructor(private readonly prismaService: PrismaService) { }
 
-    getGameRun(id: number): GameRun {
-        const dbGameRun = this.sqliteService.getGameRunById(id);
+    async getGameRun(id: number): Promise<GameRun> {
+        const dbGameRun = await this.prismaService.getGameRunById(id);
 
         if (!dbGameRun) {
             throw new Error('Game run not found');
@@ -31,25 +29,26 @@ export class GameRunService {
 
         return {
             ...dbGameRun,
-            guesses: this.getGameRunGuesses(dbGameRun.id, dbGameRun.date),
+            guesses: await this.getGameRunGuesses(dbGameRun.id, dbGameRun.date),
         };
     }
 
-    getOrCreateGameRun(session: string, date: string): GameRun {
+    async getOrCreateGameRun(session: string, date: Date): Promise<GameRun> {
         const dbGameRun =
-            this.sqliteService.getGameRunByDate(date, session) ||
-            this.sqliteService.createGameRun(date, session);
+            await this.prismaService.getGameRunByDate(date, session) ||
+            await this.prismaService.createGameRun(date, session);
 
         return {
             ...dbGameRun,
-            guesses: this.getGameRunGuesses(dbGameRun.id, date),
+            guesses: await this.getGameRunGuesses(dbGameRun.id, dbGameRun.date),
         };
     }
 
-    getGameRunGuesses(gameRunId: number, date: string): Guess[] {
-        const dbGuesses = this.sqliteService.getGameRunGuesses(gameRunId);
-        const solution = (this.sqliteService.getWordOfTheDay(date)
-            || this.sqliteService.createWordOfTheDay(date)).word;
+    async getGameRunGuesses(gameRunId: number, date: Date): Promise<Guess[]> {
+        const dbGuesses = await this.prismaService.getGameRunGuesses(gameRunId);
+        const wordOfDay = await this.prismaService.getWordOfTheDay(date)
+            || await this.prismaService.createWordOfTheDay(date);
+        const solution = wordOfDay?.word || "";
 
         return dbGuesses.map((guess) => {
             let letters = guess.word.split("").map((letter, index) => ({
@@ -77,18 +76,18 @@ export class GameRunService {
         });
     }
 
-    createGameRunGuess(gameRunId: number, word: string, date: string): GameRun {
-        const gameRun = this.sqliteService.getGameRunById(gameRunId);
+    async createGameRunGuess(gameRunId: number, word: string, date: Date): Promise<GameRun> {
+        const gameRun = await this.prismaService.getGameRunById(gameRunId);
 
         if (!gameRun) {
             throw new Error('Game run not found');
         }
 
-        this.sqliteService.createGameRunGuess(gameRunId, word);
+        await this.prismaService.createGameRunGuess(gameRunId, word);
 
         return {
             ...gameRun,
-            guesses: this.getGameRunGuesses(gameRunId, date),
+            guesses: await this.getGameRunGuesses(gameRunId, date),
         };
     }
 }

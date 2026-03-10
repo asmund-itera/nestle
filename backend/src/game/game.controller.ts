@@ -21,20 +21,20 @@ export class GameController {
     constructor(private readonly gameRunService: GameRunService) { }
 
     @Get('/:date')
-    getGameRun(@Req() req: SessionRequest, @Param('date') date: string): GameRun {
-        return this.gameRunService.getOrCreateGameRun(req.sessionId, date);
+    async getGameRun(@Req() req: SessionRequest, @Param('date') date: string): Promise<GameRun> {
+        return this.gameRunService.getOrCreateGameRun(req.sessionId, new Date(date));
     }
 
     @Post('/:gameRunId/guess')
-    createGameRunGuess(
+    async createGameRunGuess(
         @Param('gameRunId', ParseIntPipe) gameRunId: number,
         @Body() body: CreateGameRunGuessBody,
-    ): GameRun {
+    ): Promise<GameRun> {
         if (!body.word || !/^[a-z]{5}$/i.test(body.word)) {
             throw new BadRequestException('word must be a 5-letter string');
         }
 
-        const gameRun = this.gameRunService.getGameRun(gameRunId);
+        const gameRun = await this.gameRunService.getGameRun(gameRunId);
         return this.gameRunService.createGameRunGuess(
             gameRunId,
             body.word.toLowerCase(),

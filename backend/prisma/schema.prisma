@@ -31,8 +31,8 @@ model GameWord {
 
 model Game {
   date            DateTime    @id @db.Date
-  word            String?
-  gameWordEntry GameWord? @relation(fields: [word], references: [word])
+  word            String
+  gameWordEntry GameWord @relation(fields: [word], references: [word])
 
   @@map("games")
 }
@@ -50,10 +50,10 @@ model GameRun {
 
 model GameRunGuess {
   id              Int         @id @default(autoincrement())
-  gameRunId       Int?        @map("game-run")
-  word            String?
-  gameRun         GameRun?    @relation(fields: [gameRunId], references: [id])
-  dictionaryEntry Dictionary? @relation(fields: [word], references: [word])
+  gameRunId       Int        @map("game-run")
+  word            String
+  gameRun         GameRun    @relation(fields: [gameRunId], references: [id])
+  dictionaryEntry Dictionary @relation(fields: [word], references: [word])
 
   @@index([gameRunId])
   @@index([word])

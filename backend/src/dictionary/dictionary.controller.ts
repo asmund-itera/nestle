@@ -8,7 +8,7 @@ import {
     Put,
 } from '@nestjs/common';
 import type { DictionaryEntry } from '../database/sqlite.service';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from 'src/database/prisma.service';
 
 type UpsertEntryBody = {
     value?: string;
