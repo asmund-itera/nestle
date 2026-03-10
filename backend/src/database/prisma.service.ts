@@ -1,13 +1,24 @@
-// service that mirrors sqlite service but uses prisma instead of sqlite
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../generated/prisma/client';
-import type { Game, GameRun, GameRunGuess, GameWord } from '../../generated/prisma/client';
-import { Dictionary } from 'generated/prisma/browser';
+import type { Dictionary, Game, GameRun, GameRunGuess, GameWord } from '../../generated/prisma/client';
 
 @Injectable()
 export class PrismaService
     extends PrismaClient
     implements OnModuleInit, OnModuleDestroy {
+
+    constructor() {
+        const connectionString = process.env.DATABASE_URL;
+
+        if (!connectionString) {
+            throw new Error('DATABASE_URL is not set');
+        }
+
+        super({
+            adapter: new PrismaPg({ connectionString }),
+        });
+    }
 
     async onModuleInit() {
         await this.$connect();
@@ -92,5 +103,47 @@ export class PrismaService
         } else {
             return null;
         }
+    }
+
+    getAllWinsForSession(sessionId: string): Promise<GameRun[]> {
+        return this.gameRun.findMany({
+            where: {
+                session: sessionId,
+            },
+            include: {
+                guesses: true,
+            },
+            orderBy: {
+                date: 'desc',
+            },
+        }).then(async (gameRunsWithGuesses) => {
+            if (gameRunsWithGuesses.length === 0) {
+                return [];
+            }
+
+            const games = await this.game.findMany({
+                where: {
+                    date: {
+                        in: gameRunsWithGuesses.map((gameRun) => gameRun.date),
+                    },
+                },
+            });
+
+            const gameWordByDate = new Map(
+                games.map((game) => [game.date.toISOString().slice(0, 10), game.word]),
+            );
+
+            return gameRunsWithGuesses
+                .filter((gameRun) => {
+                    const gameWord = gameWordByDate.get(gameRun.date.toISOString().slice(0, 10));
+
+                    if (!gameWord) {
+                        return false;
+                    }
+
+                    return gameRun.guesses.some((guess) => guess.word === gameWord);
+                })
+                .map(({ id, date, session }) => ({ id, date, session }));
+        });
     }
 }

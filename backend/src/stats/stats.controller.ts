@@ -9,7 +9,7 @@ export class StatsController {
     constructor(private readonly statsService: StatsService) { }
 
     @Get()
-    getStats(@Req() req: SessionRequest): Stats {
+    getStats(@Req() req: SessionRequest): Promise<Stats> {
         return this.statsService.getStats(req.sessionId);
     }
 }

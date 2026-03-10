@@ -1,5 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { GameRun, SqliteService } from 'src/database/sqlite.service';
+import { Inject, Injectable } from '@nestjs/common';
+import type { GameRun } from '../../generated/prisma/client';
+import type { PrismaService } from 'src/database/prisma.service';
+
+export const PRISMA_SERVICE_TOKEN = 'PRISMA_SERVICE_TOKEN';
 
 export type Stats = {
     currentStreak: number;
@@ -9,10 +12,13 @@ export type Stats = {
 
 @Injectable()
 export class StatsService {
-    constructor(private readonly sqliteService: SqliteService) { }
+    constructor(
+        @Inject(PRISMA_SERVICE_TOKEN)
+        private readonly prismaService: Pick<PrismaService, 'getAllWinsForSession'>,
+    ) { }
 
-    getStats(session: string): Stats {
-        const allWins = this.sqliteService.getAllWinsForSession(session);
+    async getStats(session: string): Promise<Stats> {
+        const allWins = await this.prismaService.getAllWinsForSession(session);
         const streaks = this.groupWinsIntoStreaks(allWins);
         const currentStreak = this.findCurrentStreak(streaks);
 
@@ -33,7 +39,9 @@ export class StatsService {
 
         for (let i = 1; i < wins.length; i++) {
             const previousWinDate = new Date(wins[i - 1].date);
+            previousWinDate.setHours(0, 0, 0, 0);
             const currentWinDate = new Date(wins[i].date);
+            currentWinDate.setHours(0, 0, 0, 0);
             const differenceInDays = (previousWinDate.getTime() - currentWinDate.getTime()) / (1000 * 3600 * 24);
 
             if (differenceInDays === 1) {
@@ -48,9 +56,10 @@ export class StatsService {
         return streaks;
     }
 
-    private findCurrentStreak(streaks: GameRun[][], today: string = new Date().toISOString().split('T')[0]): number {
+    private findCurrentStreak(streaks: GameRun[][], today: Date = new Date()): number {
+        const todayString = today.toISOString().split('T')[0];
         for (const streak of streaks) {
-            if (streak.some((win) => win.date === today)) {
+            if (streak.some((win) => win.date.toISOString().split('T')[0] === todayString)) {
                 return streak.length;
             }
         }
