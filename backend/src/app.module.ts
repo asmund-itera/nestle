@@ -1,6 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { DictionaryController } from './dictionary/dictionary.controller';
-import { SqliteService } from './database/sqlite.service';
 import { GameController } from './game/game.controller';
 import { GameRunService } from './game/game-run.service';
 import { SessionCookieMiddleware } from './session/session-cookie.middleware';

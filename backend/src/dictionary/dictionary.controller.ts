@@ -1,14 +1,11 @@
 import {
-    BadRequestException,
-    Body,
     Controller,
     Get,
     NotFoundException,
     Param,
-    Put,
 } from '@nestjs/common';
-import type { DictionaryEntry } from '../database/sqlite.service';
 import { PrismaService } from 'src/database/prisma.service';
+import type { Dictionary } from '../../generated/prisma/client';
 
 type UpsertEntryBody = {
     value?: string;
@@ -21,7 +18,7 @@ export class DictionaryController {
     ) { }
 
     @Get('/random')
-    async getRandomWord(): Promise<DictionaryEntry> {
+    async getRandomWord(): Promise<Dictionary> {
         const entry = await this.prismaService.getRandomWord();
 
         if (!entry) {
@@ -32,7 +29,7 @@ export class DictionaryController {
     }
 
     @Get('/check/:word')
-    async getWord(@Param('word') word: string): Promise<DictionaryEntry> {
+    async getWord(@Param('word') word: string): Promise<Dictionary> {
         const entry = await this.prismaService.getWord(word);
 
         if (!entry) {
