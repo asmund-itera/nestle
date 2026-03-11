@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     checkDictionaryWord,
     fetchGameRun,
@@ -32,6 +32,7 @@ export function useGameRun(
     const [currentGuess, setCurrentGuess] = useState("");
     const [isCurrentGuessIllegal, setIsCurrentGuessIllegal] =
         useState<boolean>(false);
+    const lastAttemptedGuessRef = useRef("");
 
     const { data: gameRunData } = useQuery({
         queryKey: ["gameRun", date],
@@ -61,7 +62,7 @@ export function useGameRun(
         },
     });
 
-    const isSubmittingGuess = submitGuessMutation.isPending;
+    const { mutateAsync: submitGuess, isPending: isSubmittingGuess } = submitGuessMutation;
 
     const guesses = gameRun?.guesses ?? [];
     const gameRunLetters = guesses.flatMap((guess) => guess.letters);
@@ -79,18 +80,25 @@ export function useGameRun(
 
         if (currentGuess.length !== wordLength) {
             setIsCurrentGuessIllegal(false);
+            lastAttemptedGuessRef.current = "";
             return;
         }
 
-        if (!gameRun || isSubmittingGuess) {
+        if (!gameRun) {
             return;
         }
+
+        if (currentGuess === lastAttemptedGuessRef.current) {
+            return;
+        }
+
+        lastAttemptedGuessRef.current = currentGuess;
 
         let isCancelled = false;
 
         const checkWordAndSubmit = async () => {
             try {
-                await submitGuessMutation.mutateAsync(currentGuess);
+                await submitGuess(currentGuess);
 
                 if (isCancelled) {
                     return;
@@ -116,14 +124,7 @@ export function useGameRun(
         return () => {
             isCancelled = true;
         };
-    }, [
-        currentGuess,
-        gameRun,
-        isSolved,
-        wordLength,
-        isSubmittingGuess,
-        submitGuessMutation,
-    ]);
+    }, [currentGuess, gameRun, isSolved, wordLength, submitGuess]);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {

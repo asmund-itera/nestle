@@ -7,7 +7,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
     const todayIso = new Date().toISOString().split("T")[0];
-    const { data: stats } = useStatsQuery();
+    const stats = useStatsQuery();
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-zinc-50">
@@ -19,11 +19,17 @@ function HomePage() {
                     <h2 className="max-w-xs text-xl leading-8 text-zinc-600">
                         NestJS, Vite, TanStack Router, TanStack Query
                     </h2>
-                    <ul className="max-w-md text-lg leading-8 text-zinc-600">
-                        <li>Current streak: {stats?.currentStreak ?? 0}</li>
-                        <li>Longest streak: {stats?.longestStreak ?? 0}</li>
-                        <li>Total games played: {stats?.totalGamesPlayed ?? 0}</li>
-                    </ul>
+                    {stats.isPending && <p className="text-zinc-500">Loading stats...</p>}
+                    {stats.error && (
+                        <p className="text-red-500">Failed to load stats: {stats.error.message}</p>
+                    )}
+                    {stats.data && (
+                        <ul className="max-w-md text-lg leading-8 text-zinc-600">
+                            <li>Current streak: {stats.data.currentStreak ?? 0}</li>
+                            <li>Longest streak: {stats.data.longestStreak ?? 0}</li>
+                            <li>Total games played: {stats.data.totalGamesPlayed ?? 0}</li>
+                        </ul>
+                    )}
                     <Link
                         to="/$date"
                         params={{ date: todayIso }}
