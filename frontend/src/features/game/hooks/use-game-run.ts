@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import {
     checkDictionaryWord,
     fetchGameRun,
@@ -21,6 +21,8 @@ type UseGameRunResult = {
     isSubmittingGuess: boolean;
     isOutOfGuesses: boolean;
     isSolved: boolean;
+    handleLetterInput: (letter: string) => void;
+    handleBackspaceInput: () => void;
 };
 
 export function useGameRun(
@@ -32,7 +34,6 @@ export function useGameRun(
     const [currentGuess, setCurrentGuess] = useState("");
     const [isCurrentGuessIllegal, setIsCurrentGuessIllegal] =
         useState<boolean>(false);
-    const lastAttemptedGuessRef = useRef("");
 
     const { data: gameRunData } = useQuery({
         queryKey: ["gameRun", date],
@@ -73,78 +74,66 @@ export function useGameRun(
         latestGuess.letters.length === wordLength &&
         latestGuess.letters.every((letter) => letter.isCorrect);
 
-    useEffect(() => {
-        if (isSolved) {
-            return;
-        }
-
-        if (currentGuess.length !== wordLength) {
-            setIsCurrentGuessIllegal(false);
-            lastAttemptedGuessRef.current = "";
-            return;
-        }
-
+    const attemptGuess = useEffectEvent(async (guess: string) => {
         if (!gameRun) {
             return;
         }
 
-        if (currentGuess === lastAttemptedGuessRef.current) {
-            return;
-        }
-
-        lastAttemptedGuessRef.current = currentGuess;
-
-        let isCancelled = false;
-
-        const checkWordAndSubmit = async () => {
-            try {
-                await submitGuess(currentGuess);
-
-                if (isCancelled) {
-                    return;
-                }
-
-                setIsCurrentGuessIllegal(false);
-            } catch (error) {
-                if (isCancelled) {
-                    return;
-                }
-
-                if (error instanceof IllegalWordError) {
-                    setIsCurrentGuessIllegal(true);
-                    return;
-                }
-
-                setIsCurrentGuessIllegal(false);
-            }
-        };
-
-        void checkWordAndSubmit();
-
-        return () => {
-            isCancelled = true;
-        };
-    }, [currentGuess, gameRun, isSolved, wordLength, submitGuess]);
-
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (isSolved || isOutOfGuesses) {
+        try {
+            await submitGuess(guess);
+            setIsCurrentGuessIllegal(false);
+        } catch (error) {
+            if (error instanceof IllegalWordError) {
+                setIsCurrentGuessIllegal(true);
                 return;
             }
 
+            setIsCurrentGuessIllegal(false);
+        }
+    });
+
+    const handleLetterInput = useEffectEvent((letter: string) => {
+        if (isSolved || isOutOfGuesses || isSubmittingGuess) {
+            return;
+        }
+
+        if (!/^[a-z]$/i.test(letter)) {
+            return;
+        }
+
+        if (currentGuess.length >= wordLength) {
+            return;
+        }
+
+        const nextGuess = `${currentGuess}${letter.toLowerCase()}`;
+        setCurrentGuess(nextGuess);
+
+        if (nextGuess.length === wordLength) {
+            void attemptGuess(nextGuess);
+            return;
+        }
+
+        setIsCurrentGuessIllegal(false);
+    });
+
+    const handleBackspaceInput = useEffectEvent(() => {
+        if (isSolved || isOutOfGuesses) {
+            return;
+        }
+
+        setCurrentGuess((prev) => prev.slice(0, -1));
+        setIsCurrentGuessIllegal(false);
+    });
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === "Backspace") {
-                setCurrentGuess((prev) => prev.slice(0, -1));
+                handleBackspaceInput();
                 return;
             }
 
             if (/^[a-z]$/i.test(event.key)) {
-                setCurrentGuess((prev) => {
-                    if (prev.length >= wordLength) {
-                        return prev;
-                    }
-
-                    return `${prev}${event.key.toLowerCase()}`;
-                });
+                handleLetterInput(event.key);
             }
         };
 
@@ -153,7 +142,7 @@ export function useGameRun(
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, [isOutOfGuesses, isSolved, wordLength]);
+    }, []);
 
     return {
         gameRun,
@@ -164,5 +153,7 @@ export function useGameRun(
         isSubmittingGuess,
         isOutOfGuesses,
         isSolved,
+        handleLetterInput,
+        handleBackspaceInput,
     };
 }
