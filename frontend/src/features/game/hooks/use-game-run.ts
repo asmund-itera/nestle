@@ -1,4 +1,11 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import {
+    checkDictionaryWord,
+    fetchGameRun,
+    IllegalWordError,
+    submitGameRunGuess,
+} from "../../../lib/api";
 import type {
     GameRunGuess,
     GameRunLetter,
@@ -21,11 +28,40 @@ export function useGameRun(
     wordLength: number,
     maxGuesses: number,
 ): UseGameRunResult {
-    const [gameRun, setGameRun] = useState<GameRunResponse | null>(null);
+    const queryClient = useQueryClient();
     const [currentGuess, setCurrentGuess] = useState("");
     const [isCurrentGuessIllegal, setIsCurrentGuessIllegal] =
         useState<boolean>(false);
-    const [isSubmittingGuess, setIsSubmittingGuess] = useState(false);
+
+    const { data: gameRunData } = useQuery({
+        queryKey: ["gameRun", date],
+        queryFn: () => fetchGameRun(date),
+    });
+
+    const gameRun = gameRunData ?? null;
+
+    const submitGuessMutation = useMutation({
+        mutationFn: async (word: string) => {
+            if (!gameRun) {
+                throw new Error("Game run not loaded");
+            }
+
+            const isDictionaryWord = await checkDictionaryWord(word);
+
+            if (!isDictionaryWord) {
+                throw new IllegalWordError();
+            }
+
+            return submitGameRunGuess(gameRun.id, word);
+        },
+        onSuccess: (updatedGameRun) => {
+            queryClient.setQueryData(["gameRun", date], updatedGameRun);
+            setCurrentGuess("");
+            setIsCurrentGuessIllegal(false);
+        },
+    });
+
+    const isSubmittingGuess = submitGuessMutation.isPending;
 
     const guesses = gameRun?.guesses ?? [];
     const gameRunLetters = guesses.flatMap((guess) => guess.letters);
@@ -35,27 +71,6 @@ export function useGameRun(
         !!latestGuess &&
         latestGuess.letters.length === wordLength &&
         latestGuess.letters.every((letter) => letter.isCorrect);
-
-    useEffect(() => {
-        let isCancelled = false;
-
-        const loadGameRun = async () => {
-            const response = await fetch(`/api/game/${encodeURIComponent(date)}`);
-
-            if (!response.ok || isCancelled) {
-                return;
-            }
-
-            const loadedGameRun = (await response.json()) as GameRunResponse;
-            setGameRun(loadedGameRun);
-        };
-
-        void loadGameRun();
-
-        return () => {
-            isCancelled = true;
-        };
-    }, [date]);
 
     useEffect(() => {
         if (isSolved) {
@@ -73,50 +88,42 @@ export function useGameRun(
 
         let isCancelled = false;
 
-        const checkWord = async () => {
-            const response = await fetch(
-                `/api/dictionary/check/${encodeURIComponent(currentGuess)}`,
-            );
-
-            if (isCancelled) {
-                return;
-            }
-
-            if (response.status === 200) {
-                setIsCurrentGuessIllegal(false);
-                setIsSubmittingGuess(true);
-
-                const submitResponse = await fetch(`/api/game/${gameRun.id}/guess`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ word: currentGuess }),
-                });
+        const checkWordAndSubmit = async () => {
+            try {
+                await submitGuessMutation.mutateAsync(currentGuess);
 
                 if (isCancelled) {
                     return;
                 }
 
-                if (submitResponse.ok) {
-                    const updatedGameRun = (await submitResponse.json()) as GameRunResponse;
-                    setGameRun(updatedGameRun);
-                    setCurrentGuess("");
+                setIsCurrentGuessIllegal(false);
+            } catch (error) {
+                if (isCancelled) {
+                    return;
                 }
 
-                setIsSubmittingGuess(false);
-                return;
-            }
+                if (error instanceof IllegalWordError) {
+                    setIsCurrentGuessIllegal(true);
+                    return;
+                }
 
-            setIsCurrentGuessIllegal(true);
+                setIsCurrentGuessIllegal(false);
+            }
         };
 
-        void checkWord();
+        void checkWordAndSubmit();
 
         return () => {
             isCancelled = true;
         };
-    }, [currentGuess, gameRun, isSolved, wordLength, isSubmittingGuess]);
+    }, [
+        currentGuess,
+        gameRun,
+        isSolved,
+        wordLength,
+        isSubmittingGuess,
+        submitGuessMutation,
+    ]);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
