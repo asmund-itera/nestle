@@ -58,8 +58,12 @@ export class StatsService {
 
     private findCurrentStreak(streaks: GameRun[][], today: Date = new Date()): number {
         const todayString = today.toISOString().split('T')[0];
+        const yesterdayString = new Date(today.getTime() - 24 * 3600 * 1000).toISOString().split('T')[0];
         for (const streak of streaks) {
-            if (streak.some((win) => win.date.toISOString().split('T')[0] === todayString)) {
+            if (streak.some((win) => {
+                let date = win.date.toISOString().split('T')[0];
+                return date === todayString || date === yesterdayString;
+            })) {
                 return streak.length;
             }
         }
