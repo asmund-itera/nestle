@@ -1,11 +1,13 @@
 ## Description
 
-A wordle game implemented in NestJS, React (NextJS) and tailwind, with a sqlite database.
+A Wordle-style game implemented with NestJS on the backend and React on the frontend.
+The frontend now runs on Vite and uses TanStack Router with file-based routes and TanStack Query for data fetching.
+The backend uses Prisma with PostgreSQL.
 
 ## Project structure
 
-- `backend/`: NestJS API + SQLite access
-- `frontend/`: Next.js app
+- `backend/`: NestJS API + Prisma/PostgreSQL access
+- `frontend/`: Vite + React + TanStack Router + TanStack Query app
 
 ## Install dependencies
 
@@ -29,6 +31,11 @@ $ npm run start:dev
 $ cd frontend
 $ npm run dev
 ```
+
+Default local URLs:
+
+- frontend: `http://localhost:5173`
+- backend: `http://localhost:3001`
 
 ## Build
 
@@ -78,6 +85,8 @@ $ cd frontend && npm run test:watch
 
 ## Notes
 
-- The frontend expects API requests through `/api/*` rewrites to the backend.
+- The frontend proxies `/api/*` requests to the backend during development via Vite.
 - Session handling is cookie-based (`nestle_session`), not URL-based.
-- SQLite database file defaults to `backend/data.db` unless `SQLITE_PATH` is set.
+- Frontend routes are `/` and `/:date`.
+- The frontend uses TanStack Router file-based routes under `frontend/src/routes`.
+- The backend Prisma datasource is PostgreSQL.
